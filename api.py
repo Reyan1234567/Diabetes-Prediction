@@ -1,5 +1,6 @@
 from enum import Enum
 from fastapi import FastAPI
+from fastapi import HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
@@ -86,35 +87,47 @@ class Input(BaseModel):
 
 @app.post('/diabeto/logistic')
 def check_diabetes(input: Input):
-    #change to a dictionary
-    data_dict = input.model_dump()
-    
-    #loop and check if each value in the dictionary has a value attribute....
-    #if it does then you replace the one that is there with the .attribute thing...
-    for key, value in data_dict.items():
-        if hasattr(value, 'value'):
-            data_dict[key] = value.value
+    try:
+        #change to a dictionary
+        data_dict = input.model_dump()
+        
+        #loop and check if each value in the dictionary has a value attribute....
+        #if it does then you replace the one that is there with the .attribute thing...
+        for key, value in data_dict.items():
+            if hasattr(value, 'value'):
+                data_dict[key] = value.value
 
-    #make a df out of the dictionary
-    df = pd.DataFrame([data_dict])
-    
-    #predict
-    prediction = logistic_regression_model.predict(df)
-    
-    return {"prediction": "Smoker" if int(prediction[0])==1 else "Non-Smoker"}
+        #make a df out of the dictionary
+        df = pd.DataFrame([data_dict])
+        
+        #predict
+        prediction = logistic_regression_model.predict(df)
+        
+        return {"prediction": "Smoker" if int(prediction[0])==1 else "Non-Smoker"}
+    except Exception as e:
+        raise HttpException(
+            status_code=400,
+            detail=str(e)
+        )
 
 
 @app.post('/diabeto/tree')
 def check_diabetes(input: Input):
-    data_dict = input.model_dump()
-    
-    for key, value in data_dict.items():
-        if hasattr(value, 'value'):
-            data_dict[key] = value.value
+    try:
+        data_dict = input.model_dump()
+        
+        for key, value in data_dict.items():
+            if hasattr(value, 'value'):
+                data_dict[key] = value.value
 
-    df = pd.DataFrame([data_dict])
-    
-    prediction = decision_tree_classifier_model.predict(df)
-    
-    return {"prediction": "Smoker" if int(prediction[0])==1 else "Non-Smoker"}
+        df = pd.DataFrame([data_dict])
+        
+        prediction = decision_tree_classifier_model.predict(df)
+        
+        return {"prediction": "Smoker" if int(prediction[0])==1 else "Non-Smoker"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
 
